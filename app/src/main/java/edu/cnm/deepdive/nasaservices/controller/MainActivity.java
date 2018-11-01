@@ -17,10 +17,15 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import edu.cnm.deepdive.nasaservices.BuildConfig;
 import edu.cnm.deepdive.nasaservices.R;
+import edu.cnm.deepdive.nasaservices.controller.DateTimePickerFragment.Mode;
 import edu.cnm.deepdive.nasaservices.model.Apod;
 import edu.cnm.deepdive.nasaservices.service.ApodService;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -47,7 +52,14 @@ public class MainActivity extends AppCompatActivity {
     setupWebView();
     setupUI();
     setupService();
-    //todo: setup defaults
+    setupDefaults(savedInstanceState);
+  }
+
+  private void setupDefaults(Bundle savedInstanceState){
+    calendar = Calendar.getInstance();
+    //todo: check for savedinstancestate
+    new ApodTask().execute();
+
   }
 
   private void setupService(){
@@ -67,14 +79,7 @@ public class MainActivity extends AppCompatActivity {
     progressSpinner = findViewById(R.id.progress_spinner);
     progressSpinner.setVisibility(View.GONE);
     jumpDate = findViewById(R.id.jump_date);
-    jumpDate.setOnClickListener(new OnClickListener() {
-      //todo: use lambda form
-      @Override
-      public void onClick(View v) {
-        //todo: display date picker
-        //
-      }
-    });
+    jumpDate.setOnClickListener(v -> pickDate());
   }
 
   private void setupWebView() {
@@ -83,7 +88,9 @@ public class MainActivity extends AppCompatActivity {
       @Override
       public void onPageFinished(WebView view, String url) {
         progressSpinner.setVisibility(View.GONE);
-        //todo: display toast with APOD item title.
+        if(apod!=null){
+          Toast.makeText(MainActivity.this, apod.getTitle(), Toast.LENGTH_LONG).show();
+        }
       }
 
       @Override
@@ -100,11 +107,37 @@ public class MainActivity extends AppCompatActivity {
     settings.setLoadWithOverviewMode(true);
   }
 
+  private void pickDate(){
+    DateTimePickerFragment picker = new DateTimePickerFragment();
+    picker.setMode(Mode.DATE);
+    picker.setCalendar(calendar);
+    picker.setListener((cal) -> new ApodTask().execute(cal.getTime()));
+    picker.show(getSupportFragmentManager(), picker.getClass().getSimpleName());
+  }
+
   private class ApodTask extends AsyncTask<Date, Void, Apod>{
+
+    private Date date;
 
     @Override
     protected Apod doInBackground(Date... dates) {
-      return null;
+      Apod apod = null;
+      try {
+        DateFormat format = new SimpleDateFormat(DATE_FORMAT);
+        date = (dates.length == 0) ? calendar.getTime() : dates[0];
+        Response<Apod> response = service.get(apiKey, format.format(date)).execute();
+        if(response.isSuccessful()){
+          apod = response.body();
+          calendar.setTime(date);
+        }
+      } catch (IOException e) {
+        //do nothing, apod is already null
+      } finally {
+        if(apod==null){
+          cancel(true);
+        }
+      }
+      return apod;
     }
 
     @Override
@@ -128,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCancelled(Apod apod) {
       progressSpinner.setVisibility(View.GONE);
       Context context = MainActivity.this;
-      Toast.makeText(context, "Unable to retrieve APOD for selected date.", Toast.LENGTH_SHORT).show();
+      Toast.makeText(context, getString(R.string.error_message), Toast.LENGTH_SHORT).show();
 
     }
   }

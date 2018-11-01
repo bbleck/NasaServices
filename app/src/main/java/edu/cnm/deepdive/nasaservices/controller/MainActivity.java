@@ -1,5 +1,7 @@
 package edu.cnm.deepdive.nasaservices.controller;
 
+import android.content.Context;
+import android.os.AsyncTask;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -10,6 +12,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import edu.cnm.deepdive.nasaservices.BuildConfig;
@@ -17,6 +20,7 @@ import edu.cnm.deepdive.nasaservices.R;
 import edu.cnm.deepdive.nasaservices.model.Apod;
 import edu.cnm.deepdive.nasaservices.service.ApodService;
 import java.util.Calendar;
+import java.util.Date;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -95,4 +99,39 @@ public class MainActivity extends AppCompatActivity {
     settings.setUseWideViewPort(true);
     settings.setLoadWithOverviewMode(true);
   }
+
+  private class ApodTask extends AsyncTask<Date, Void, Apod>{
+
+    @Override
+    protected Apod doInBackground(Date... dates) {
+      return null;
+    }
+
+    @Override
+    protected void onPreExecute() {
+      progressSpinner.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    protected void onPostExecute(Apod apod) {
+      MainActivity.this.apod = apod;
+      //todo: handle hdurl
+      webView.loadUrl(apod.getUrl());
+    }
+
+    @Override
+    protected void onProgressUpdate(Void... values) {
+      super.onProgressUpdate(values);
+    }
+
+    @Override
+    protected void onCancelled(Apod apod) {
+      progressSpinner.setVisibility(View.GONE);
+      Context context = MainActivity.this;
+      Toast.makeText(context, "Unable to retrieve APOD for selected date.", Toast.LENGTH_SHORT).show();
+
+    }
+  }
+
+
 }

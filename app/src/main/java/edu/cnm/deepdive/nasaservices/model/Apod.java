@@ -36,9 +36,6 @@ public class Apod implements Parcelable {
   @SerializedName("service_version")
   private String serviceVersion;
 
-  protected Apod(Parcel in) {
-  }
-
   @Override
   public int describeContents() {
     return 0;
@@ -46,15 +43,29 @@ public class Apod implements Parcelable {
 
   @Override
   public void writeToParcel(Parcel dest, int flags) {
-    //todo: write fields to dest.
+    dest.writeLong(date.getTime());
+    dest.writeString(title);
+    dest.writeString(explanation);
+    dest.writeString(copyright);
+    dest.writeString(url);
+    dest.writeString(mediaType);
+    dest.writeString(hdUrl);
+    dest.writeString(serviceVersion);
   }
 
   public static final Creator<Apod> CREATOR = new Creator<Apod>() {
     @Override
     public Apod createFromParcel(Parcel in) {
-      //todo: create apod object and populate its fields from source
-
-      return new Apod(in);
+      Apod apod = new Apod();
+      apod.date = new Date(in.readLong());
+      apod.title = in.readString();
+      apod.explanation = in.readString();
+      apod.copyright = in.readString();
+      apod.url = in.readString();
+      apod.mediaType = in.readString();
+      apod.hdUrl = in.readString();
+      apod.serviceVersion = in.readString();
+      return apod;
     }
 
     @Override
